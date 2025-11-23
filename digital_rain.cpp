@@ -17,15 +17,43 @@ class Console {
     HANDLE outputHandle;
     WORD oldColorAttribute;
 
-    Console();
-public:
-    void clear_screen();
-    void set_cursor_pos(short x, short y);
-    void enable_cursor_shown(bool flag);
-    void set_text_color(int colorAttibute);
-    void set_default_text_color();
+    Console() {
+        outputHandle = GetStdHandle(STD_OUTPUT_HANDLE);
 
-    static Console& instance();
+        CONSOLE_SCREEN_BUFFER_INFO csbi;
+        GetConsoleScreenBufferInfo(outputHandle, &csbi);
+        oldColorAttribute = csbi.wAttributes;
+    }
+public:
+    void clear_screen() {
+        system("cls");
+    }
+
+    void set_cursor_pos(short x, short y) {
+        COORD pos = { x, y };
+        SetConsoleCursorPosition(outputHandle, pos);
+    }
+
+    void enable_cursor_shown(bool flag) {
+        CONSOLE_CURSOR_INFO cci;
+    
+        GetConsoleCursorInfo(outputHandle, &cci);
+        cci.bVisible = (flag ? 1 : 0);
+        SetConsoleCursorInfo(outputHandle, &cci);
+    }
+
+    void set_text_color(int colorAttibute) {
+        SetConsoleTextAttribute(outputHandle, colorAttibute);
+    }
+
+    void set_default_text_color() {
+        SetConsoleTextAttribute(outputHandle, oldColorAttribute);
+    }
+
+    static Console& instance() {
+        static Console c;
+        return c;
+    }
 };
 
 struct Rain {
@@ -35,49 +63,6 @@ struct Rain {
 };
 
 // callback to handle Ctrl + C signal on windows platform.
-BOOL WINAPI console_signal_handler(DWORD signal);
-
-// show it.
-void show_digital_rain();
-
-Console::Console() {
-    outputHandle = GetStdHandle(STD_OUTPUT_HANDLE);
-
-    CONSOLE_SCREEN_BUFFER_INFO csbi;
-    GetConsoleScreenBufferInfo(outputHandle, &csbi);
-    oldColorAttribute = csbi.wAttributes;
-}
-
-void Console::clear_screen() {
-    system("cls");
-}
-
-void Console::set_cursor_pos(short x, short y) {
-    COORD pos = { x, y };
-    SetConsoleCursorPosition(outputHandle, pos);
-}
-
-void Console::enable_cursor_shown(bool flag) {
-    CONSOLE_CURSOR_INFO cci;
-    
-    GetConsoleCursorInfo(outputHandle, &cci);
-    cci.bVisible = (flag ? 1 : 0);
-    SetConsoleCursorInfo(outputHandle, &cci);
-}
-
-void Console::set_text_color(int colorAttibute) {
-    SetConsoleTextAttribute(outputHandle, colorAttibute);
-}
-
-void Console::set_default_text_color() {
-    SetConsoleTextAttribute(outputHandle, oldColorAttribute);
-}
-
-Console& Console::instance() {
-    static Console c;
-    return c;
-}
-
 BOOL WINAPI console_signal_handler(DWORD signal) {
     if (signal == CTRL_C_EVENT) {
         Console::instance().enable_cursor_shown(true);
@@ -89,6 +74,7 @@ BOOL WINAPI console_signal_handler(DWORD signal) {
     return true;
 }
 
+// show it.
 void show_digital_rain() {
     const int height = 25;
     const int width = 80;
